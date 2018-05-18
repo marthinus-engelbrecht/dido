@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": [
+      "es7",
+      "dom"
+    ],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "declaration": true
+  },
+  "include": [
+    "source/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "plaform",
+    "www",
+    "examples"
+  ]
+}
