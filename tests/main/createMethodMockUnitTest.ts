@@ -1,6 +1,15 @@
 import {createMethodMock, MockConfig} from "../../source/main/Dido";
-import {hasMethod} from "./helpers";
-import {Differed} from "./Differed";
+
+function getNonAsyncMethods(mockConfig: MockConfig, instance) {
+    return mockConfig.methods
+        .filter(config => !config.signature.isAsync)
+        .map(config => {
+            return {
+                method: instance[config.signature.name],
+                successValue: config.successValue
+            }
+        });
+}
 
 describe('Unit under test: createMethodMock', function () {
     describe(`Given a function that produces an object with a specified signature`, function () {
@@ -43,17 +52,17 @@ describe('Unit under test: createMethodMock', function () {
                     let asyncMethods;
 
                     beforeEach(function () {
-                        asyncMethods = mockConfig.methods
-                            .filter(config => config.signature.isAsync)
+                        asyncMethods = getAsyncMethods(mockConfig, instance)
                     });
 
                     describe('And the promises are resolved', function () {
+                        beforeEach(function () {
+                            resolve(asyncMethods);
+                        });
+
                         it('Then they should result in the expected return values', async function () {
-                            const expectationPromises = asyncMethods.map(async config => {
-                                let actualMethod = instance[config.signature.name];
-                                actualMethod.$differed.resolve();
-                                let returnedObject = await actualMethod();
-                                expect(returnedObject).to.equal(config.successValue);
+                            const expectationPromises = asyncMethods.map(async ({method, successValue}) => {
+                                await expect(method()).to.eventually.equal(successValue)
                             });
 
                             await Promise.all(expectationPromises);
@@ -61,11 +70,12 @@ describe('Unit under test: createMethodMock', function () {
                     });
 
                     describe('And the promises are rejected', function () {
+                        beforeEach(function () {
+                            reject(asyncMethods);
+                        });
                         it('Then they should throw an error', async function () {
-                            const expectationPromises = asyncMethods.map(async config => {
-                                let actualMethod = instance[config.signature.name];
-                                actualMethod.$differed.reject();
-                                await expect(actualMethod()).to.be.rejectedWith(config.failureValue)
+                            const expectationPromises = asyncMethods.map(async ({method, failureValue}) => {
+                                await expect(method()).to.be.rejectedWith(failureValue)
                             });
 
                             await Promise.all(expectationPromises);
@@ -77,15 +87,12 @@ describe('Unit under test: createMethodMock', function () {
                     let nonAsyncMethods;
 
                     beforeEach(function () {
-                        nonAsyncMethods = mockConfig.methods.filter(config => !config.signature.isAsync);
+                        nonAsyncMethods = getNonAsyncMethods(mockConfig, instance);
                     });
 
                     it('Then they should result in the expected return values', function () {
-                        nonAsyncMethods.forEach(config => {
-                            let actualMethod = instance[config.signature.name];
-                            let returnedObject = actualMethod();
-
-                            expect(returnedObject).to.equal(config.successValue);
+                        nonAsyncMethods.forEach(({method, successValue}) => {
+                            expect(method()).to.equal(successValue);
                         });
                     });
                 });
@@ -94,3 +101,23 @@ describe('Unit under test: createMethodMock', function () {
 
     });
 });
+
+function getAsyncMethods(mockConfig: MockConfig, instance) {
+    return mockConfig.methods
+        .filter(config => config.signature.isAsync)
+        .map(config => {
+            return {
+                method: instance[config.signature.name],
+                successValue: config.successValue,
+                failureValue: config.failureValue
+            }
+        });
+}
+
+function reject(asyncMethods) {
+    asyncMethods.forEach(({method}) => method.$differed.reject())
+}
+
+function resolve(asyncMethods) {
+    asyncMethods.forEach(({method}) => method.$differed.resolve())
+}
