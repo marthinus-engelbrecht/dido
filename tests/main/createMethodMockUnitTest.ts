@@ -47,7 +47,17 @@ describe('Unit under test: createMethodMock', function () {
                 expect(mocked()).to.have.signature(signature)
             });
 
+            it('Then the returned objects methods function "called" should return false', function () {
+                let executedMethods = getMethods(mockConfig, instance);
+                executedMethods.forEach(method => expect(method.called()).to.be.false)
+            });
+
             describe('And the returned objects methods are called', function () {
+                it('Then the function "called" on those methods should return true', function () {
+                    let executedMethods = getExecutedMethods(mockConfig, instance);
+                    executedMethods.forEach(method => expect(method.called()).to.be.true)
+                });
+
                 describe('And the methods are async', function () {
                     let asyncMethods;
 
@@ -98,7 +108,6 @@ describe('Unit under test: createMethodMock', function () {
                 });
             });
         });
-
     });
 });
 
@@ -111,6 +120,19 @@ function getAsyncMethods(mockConfig: MockConfig, instance) {
                 successValue: config.successValue,
                 failureValue: config.failureValue
             }
+        });
+}
+
+function getMethods(mockConfig: MockConfig, instance) {
+    return mockConfig.methods
+        .map(config => instance[config.signature.name]);
+}
+
+function getExecutedMethods(mockConfig: MockConfig, instance) {
+    return mockConfig.methods
+        .map(config => {
+            instance[config.signature.name]()
+            return instance[config.signature.name]
         });
 }
 

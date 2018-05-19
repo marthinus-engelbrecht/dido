@@ -18,7 +18,7 @@ gulp.task(`test`, () => {
 gulp.task(`compile`, function () {
     const tsProject = createProject(`tsconfig.json`);
 
-    return gulp.src(`main/**/*.ts`)
+    return gulp.src(`source/**/*.ts`)
         .pipe(sourceMaps.init())
         .pipe(tsProject())
         .on(`error`, () => {
