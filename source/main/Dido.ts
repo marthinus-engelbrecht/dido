@@ -6,23 +6,32 @@ export function createMethodMock(methodName, mockConfig: MockConfig) {
             const mockObj = {};
             mockConfig.methods.forEach(config => {
                 let called = false;
+                let calledWith: Array<any> = undefined;
+
                 if (config.signature.isAsync) {
                     const differed = new Differed(config.successValue, config.failureValue);
 
-                    mockObj[config.signature.name] = function () {
+                    mockObj[config.signature.name] = function (...args) {
                         called = true;
+                        calledWith = args;
                         return differed.promise
                     };
 
                     mockObj[config.signature.name].$differed = differed
                 } else {
-                    mockObj[config.signature.name] = function () {
+                    mockObj[config.signature.name] = function (...args) {
                         called = true;
+                        calledWith = args;
                         return config.successValue
                     };
                 }
+
                 mockObj[config.signature.name].called = function () {
                     return called;
+                };
+
+                mockObj[config.signature.name].calledWith = function (...args) {
+                    return JSON.stringify(calledWith) === JSON.stringify(args)
                 }
             });
             return mockObj

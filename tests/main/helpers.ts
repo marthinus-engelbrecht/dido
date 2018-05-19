@@ -29,8 +29,18 @@ function addSignatureAssertion(Assertion) {
             );
 
             this.assert(
+                actualMethod.calledWith,
+                `expected ${JSON.stringify(obj)} to have method "${methodSignature.name}" with property "calledWith"`,
+            );
+
+            this.assert(
                 typeof actualMethod.called === 'function',
                 `expected ${JSON.stringify(obj)} property "called" to be a function`,
+            );
+
+            this.assert(
+                typeof actualMethod.calledWith === 'function',
+                `expected ${JSON.stringify(obj)} property "calledWith" to be a function`,
             );
 
             if (methodSignature.isAsync) {

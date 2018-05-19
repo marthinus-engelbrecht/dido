@@ -52,10 +52,22 @@ describe('Unit under test: createMethodMock', function () {
                 executedMethods.forEach(method => expect(method.called()).to.be.false)
             });
 
+            it('Then the returned objects methods function "calledWith" should return false', function () {
+                let executedMethods = getMethods(mockConfig, instance);
+                executedMethods.forEach(method => expect(method.calledWith()).to.be.false)
+            });
+
             describe('And the returned objects methods are called', function () {
                 it('Then the function "called" on those methods should return true', function () {
-                    let executedMethods = getExecutedMethods(mockConfig, instance);
+                    let executedMethods = getMethodsExecuted(mockConfig, instance);
                     executedMethods.forEach(method => expect(method.called()).to.be.true)
+                });
+
+                describe('with a value', function () {
+                    it('Then the function "calledWith" on those methods should return true', function () {
+                        let executedMethods = getMethodsExecutedWithParams(mockConfig, instance);
+                        executedMethods.forEach(({method, params}) => expect(method.calledWith(...params)).to.be.true)
+                    });
                 });
 
                 describe('And the methods are async', function () {
@@ -128,11 +140,23 @@ function getMethods(mockConfig: MockConfig, instance) {
         .map(config => instance[config.signature.name]);
 }
 
-function getExecutedMethods(mockConfig: MockConfig, instance) {
+function getMethodsExecuted(mockConfig: MockConfig, instance) {
     return mockConfig.methods
         .map(config => {
-            instance[config.signature.name]()
+            instance[config.signature.name]();
             return instance[config.signature.name]
+        });
+}
+
+function getMethodsExecutedWithParams(mockConfig: MockConfig, instance) {
+    return mockConfig.methods
+        .map(config => {
+            const params = ['A', { b: 'B'}, ['C']];
+            instance[config.signature.name](...params);
+            return {
+                method: instance[config.signature.name],
+                params: params
+            }
         });
 }
 
