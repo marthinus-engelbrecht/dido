@@ -1,10 +1,5 @@
 import {Differed} from "../../source/main/Differed";
 
-export function hasMethod(object, methodName): boolean{
-    const methodNames = Object.getOwnPropertyNames(object).filter(property => typeof object[property] === 'function');
-    return methodNames.includes(methodName)
-}
-
 export function customAssertions(chai, utils) {
     let Assertion = chai.Assertion;
 
@@ -15,22 +10,22 @@ function addSignatureAssertion(Assertion) {
     Assertion.addMethod('signature', function (signature) {
         const obj = this._obj;
 
-        signature.forEach(methodSignature => {
-            let actualMethod = obj[methodSignature.name];
+        signature.forEach(({isAsync}, methodName) => {
+            let actualMethod = obj[methodName];
 
             this.assert(
-                hasMethod(obj, methodSignature.name),
-                `expected ${JSON.stringify(obj)} to have method "${methodSignature.name}"`,
+                obj.hasOwnProperty(methodName),
+                `expected ${JSON.stringify(obj)} to have method "${methodName}"`,
             );
 
             this.assert(
                 actualMethod.called,
-                `expected ${JSON.stringify(obj)} to have method "${methodSignature.name}" with property "called"`,
+                `expected ${JSON.stringify(obj)} to have method "${methodName}" with property "called"`,
             );
 
             this.assert(
                 actualMethod.calledWith,
-                `expected ${JSON.stringify(obj)} to have method "${methodSignature.name}" with property "calledWith"`,
+                `expected ${JSON.stringify(obj)} to have method "${methodName}" with property "calledWith"`,
             );
 
             this.assert(
@@ -43,14 +38,14 @@ function addSignatureAssertion(Assertion) {
                 `expected ${JSON.stringify(obj)} property "calledWith" to be a function`,
             );
 
-            if (methodSignature.isAsync) {
+            if (isAsync) {
                 this.assert(
                     actualMethod.$differed instanceof Differed,
-                    `expected ${JSON.stringify(obj)} to have method "${methodSignature.name}" with property $differed of type Differed but got ${actualMethod.$differed}`,
+                    `expected ${JSON.stringify(obj)} to have method "${methodName}" with property $differed of type Differed but got ${actualMethod.$differed}`,
                 );
                 let returnValue = actualMethod();
                 this.assert(returnValue instanceof Promise,
-                    `expected ${JSON.stringify(obj)} to have method "${methodSignature.name}" to return a promise but got "${JSON.stringify(returnValue)}"`,
+                    `expected ${JSON.stringify(obj)} to have method "${methodName}" to return a promise but got "${JSON.stringify(returnValue)}"`,
                 );
             }
         });

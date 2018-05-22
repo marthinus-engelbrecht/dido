@@ -7,7 +7,7 @@ import {customAssertions} from "../main/helpers";
 use(chaiAsPromised);
 use(sinonChai);
 
-(<any>global).expect = expect;
-(<any>global).sinon = sinon;
+(<any> global).expect = expect;
+(<any> global).sinon = sinon;
 
 use(customAssertions);

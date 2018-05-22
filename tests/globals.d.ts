@@ -5,6 +5,6 @@ declare let sinon: any;
 
 declare namespace Chai {
     interface Assertion extends LanguageChains, NumericComparison, TypeComparison {
-        signature(array: Array<any>): Assertion;
+        signature(methods): Assertion;
     }
 }

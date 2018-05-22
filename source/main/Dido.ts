@@ -1,49 +1,52 @@
 import {Differed} from "./Differed";
+import {Map} from 'crowd';
 
-export function createMethodMock(methodName, mockConfig: MockConfig) {
+export class MethodMocks extends Map<string, MethodMock> {
+}
+
+export function createMethodMock(methodName, methods: MethodMocks) {
     return new Proxy(methodName, {
         apply: function () {
             const mockObj = {};
-            mockConfig.methods.forEach(config => {
+
+            methods.forEach((methodInfo, methodName) => {
                 let called = false;
                 let calledWith: Array<any> = undefined;
 
-                if (config.signature.isAsync) {
-                    const differed = new Differed(config.successValue, config.failureValue);
+                if (methodInfo.isAsync) {
+                    const differed = new Differed(methodInfo.successValue, methodInfo.failureValue);
 
-                    mockObj[config.signature.name] = function (...args) {
+                    mockObj[methodName] = function (...args) {
                         called = true;
                         calledWith = args;
                         return differed.promise
                     };
 
-                    mockObj[config.signature.name].$differed = differed
+                    mockObj[methodName].$differed = differed
                 } else {
-                    mockObj[config.signature.name] = function (...args) {
+                    mockObj[methodName] = function (...args) {
                         called = true;
                         calledWith = args;
-                        return config.successValue
+                        return methodInfo.successValue
                     };
                 }
 
-                mockObj[config.signature.name].called = function () {
+                mockObj[methodName].called = function () {
                     return called;
                 };
 
-                mockObj[config.signature.name].calledWith = function (...args) {
+                mockObj[methodName].calledWith = function (...args) {
                     return JSON.stringify(calledWith) === JSON.stringify(args)
                 }
             });
+
             return mockObj
         }
     });
 }
 
-export class MockConfig {
-    constructor(public methods: Array<{
-        signature: { name: string, isAsync?: boolean }
-        successValue: any
-        failureValue?: any
-    }>) {
-    }
+export interface MethodMock {
+    isAsync?: boolean,
+    successValue: any,
+    failureValue?: any
 }

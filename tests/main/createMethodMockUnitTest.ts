@@ -1,71 +1,63 @@
-import {createMethodMock, MockConfig} from "../../source/main/Dido";
-
-function getNonAsyncMethods(mockConfig: MockConfig, instance) {
-    return mockConfig.methods
-        .filter(config => !config.signature.isAsync)
-        .map(config => {
-            return {
-                method: instance[config.signature.name],
-                successValue: config.successValue
-            }
-        });
-}
+import {createMethodMock, MethodMocks} from "../../source/main/Dido";
 
 describe('Unit under test: createMethodMock', function () {
     describe(`Given a function that produces an object with a specified signature`, function () {
-        let mockConfig: MockConfig;
+        let methodMocks: MethodMocks;
 
         beforeEach(function () {
-            mockConfig = new MockConfig([
-                {
-                    signature: {
-                        name: 'doNonAsyncThings'
-                    },
-                    successValue: "This is my value"
-                },
-                {
-                    signature: {
-                        name: 'doAsyncThings',
-                        isAsync: true
-                    },
-                    successValue: "This is my value",
-                    failureValue: new Error("This is my reject value")
-                }
-            ])
+            methodMocks = new MethodMocks();
+
+            methodMocks.set('doNonAsyncThings', {
+                successValue: "This is my value"
+            });
+
+            methodMocks.set('doAsyncThings', {
+                isAsync: true,
+                successValue: "This is my value",
+                failureValue: new Error("This is my reject value")
+            })
         });
 
         describe('When createMethodMock is called with that function', function () {
             let mocked, instance;
 
             beforeEach(function () {
-                mocked = createMethodMock(function () {}, mockConfig);
+                mocked = createMethodMock(function () {
+                }, methodMocks);
                 instance = mocked();
             });
 
             it('Then it should return a method that produces a mocked object of the specified signature', function () {
-                const signature = mockConfig.methods.map(config => config.signature);
+                const signature = methodMocks.map((value, key) => {
+                    return {
+                        key: key,
+                        value: {
+                            isAsync: value.isAsync
+                        }
+                    }
+                });
                 expect(mocked()).to.have.signature(signature)
             });
 
             it('Then the returned objects methods function "called" should return false', function () {
-                let executedMethods = getMethods(mockConfig, instance);
+                let executedMethods = getMethods(methodMocks, instance);
                 executedMethods.forEach(method => expect(method.called()).to.be.false)
             });
 
             it('Then the returned objects methods function "calledWith" should return false', function () {
-                let executedMethods = getMethods(mockConfig, instance);
+                let executedMethods = getMethods(methodMocks, instance);
                 executedMethods.forEach(method => expect(method.calledWith()).to.be.false)
             });
 
             describe('And the returned objects methods are called', function () {
                 it('Then the function "called" on those methods should return true', function () {
-                    let executedMethods = getMethodsExecuted(mockConfig, instance);
+                    let executedMethods = getMethodsExecuted(methodMocks, instance);
                     executedMethods.forEach(method => expect(method.called()).to.be.true)
                 });
 
                 describe('with a value', function () {
                     it('Then the function "calledWith" on those methods should return true', function () {
-                        let executedMethods = getMethodsExecutedWithParams(mockConfig, instance);
+                        let executedMethods = getMethodsExecutedWithParams(methodMocks, instance);
                         executedMethods.forEach(({method, params}) => expect(method.calledWith(...params)).to.be.true)
                     });
                 });
@@ -74,7 +66,7 @@ describe('Unit under test: createMethodMock', function () {
                     let asyncMethods;
 
                     beforeEach(function () {
-                        asyncMethods = getAsyncMethods(mockConfig, instance)
+                        asyncMethods = getAsyncMethods(methodMocks, instance)
                     });
 
                     describe('And the promises are resolved', function () {
@@ -109,7 +101,7 @@ describe('Unit under test: createMethodMock', function () {
                     let nonAsyncMethods;
 
                     beforeEach(function () {
-                        nonAsyncMethods = getNonAsyncMethods(mockConfig, instance);
+                        nonAsyncMethods = getNonAsyncMethods(methodMocks, instance);
                     });
 
                     it('Then they should result in the expected return values', function () {
@@ -121,40 +113,51 @@ describe('Unit under test: createMethodMock', function () {
             });
         });
     });
-});
+})
+;
 
-function getAsyncMethods(mockConfig: MockConfig, instance) {
-    return mockConfig.methods
-        .filter(config => config.signature.isAsync)
-        .map(config => {
+function getNonAsyncMethods(mockMethods: MethodMocks, instance) {
+    return mockMethods.filter(({isAsync}) => !isAsync)
+        .mapToArray((method, methodName) => {
             return {
-                method: instance[config.signature.name],
-                successValue: config.successValue,
-                failureValue: config.failureValue
+                method: instance[methodName],
+                successValue: method.successValue
             }
         });
 }
 
-function getMethods(mockConfig: MockConfig, instance) {
-    return mockConfig.methods
-        .map(config => instance[config.signature.name]);
-}
-
-function getMethodsExecuted(mockConfig: MockConfig, instance) {
-    return mockConfig.methods
-        .map(config => {
-            instance[config.signature.name]();
-            return instance[config.signature.name]
+function getAsyncMethods(mockMethods: MethodMocks, instance) {
+    return mockMethods
+        .filter(({isAsync}) => isAsync)
+        .mapToArray(({successValue, failureValue}, methodName) => {
+            return {
+                method: instance[methodName],
+                successValue: successValue,
+                failureValue: failureValue
+            }
         });
 }
 
-function getMethodsExecutedWithParams(mockConfig: MockConfig, instance) {
-    return mockConfig.methods
-        .map(config => {
-            const params = ['A', { b: 'B'}, ['C']];
-            instance[config.signature.name](...params);
+function getMethods(mockMethods: MethodMocks, instance) {
+    return mockMethods
+        .mapToArray((methodInfo, methodName) => instance[methodName]);
+}
+
+function getMethodsExecuted(mockMethods: MethodMocks, instance) {
+    return mockMethods
+        .mapToArray((methodInfo, methodName) => {
+            instance[methodName]();
+            return instance[methodName]
+        });
+}
+
+function getMethodsExecutedWithParams(mockMethods: MethodMocks, instance) {
+    return mockMethods
+        .mapToArray((methodInfo, methodName) => {
+            const params = ['A', {b: 'B'}, ['C']];
+            instance[methodName](...params);
             return {
-                method: instance[config.signature.name],
+                method: instance[methodName],
                 params: params
             }
         });
