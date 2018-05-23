@@ -1,16 +1,17 @@
-import {Differed} from "../../source/main/Differed";
+import {Deferred} from "../../source/main/Deferred";
+import {MethodSignature, ObjectSignature} from "../../source/main/Dido";
 
-export function customAssertions(chai, utils) {
+export function customAssertions(chai:any) {
     let Assertion = chai.Assertion;
 
     addSignatureAssertion(Assertion);
 }
 
-function addSignatureAssertion(Assertion) {
-    Assertion.addMethod('signature', function (signature) {
+function addSignatureAssertion(Assertion: any) {
+    Assertion.addMethod('signature', function (methodMocks: ObjectSignature) {
         const obj = this._obj;
 
-        signature.forEach(({isAsync}, methodName) => {
+        methodMocks.forEach(({isAsync}, methodName) => {
             let actualMethod = obj[methodName];
 
             this.assert(
@@ -40,8 +41,8 @@ function addSignatureAssertion(Assertion) {
 
             if (isAsync) {
                 this.assert(
-                    actualMethod.$differed instanceof Differed,
-                    `expected ${JSON.stringify(obj)} to have method "${methodName}" with property $differed of type Differed but got ${actualMethod.$differed}`,
+                    actualMethod.$deferred instanceof Deferred,
+                    `expected ${JSON.stringify(obj)} to have method "${methodName}" with property $differed of type Differed but got ${actualMethod.$deferred}`,
                 );
                 let returnValue = actualMethod();
                 this.assert(returnValue instanceof Promise,

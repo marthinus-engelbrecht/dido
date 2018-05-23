@@ -1,4 +1,4 @@
-import {createMethodMock, MethodMocks} from "../main/Dido";
+import {createMethodMock, ObjectSignature} from "../main/Dido";
 
 function aFunctionThatReturnsAnObject() {
     return {
@@ -12,7 +12,7 @@ function aFunctionThatReturnsAnObject() {
     }
 }
 
-let returnObjectSignature = new MethodMocks();
+let returnObjectSignature = new ObjectSignature();
 
 returnObjectSignature.set('methodPromise', {
     isAsync: true, //default: false
@@ -31,7 +31,7 @@ const returnedObject = mockedMethod();
 
 async function log(){
     console.log('MockedMethods:', Object.keys(returnedObject).join(', '));
-    returnedObject.methodPromise.$differed.resolve();
+    returnedObject.methodPromise.$defered.resolve();
     console.log('Returned:', await returnedObject.methodPromise('Monkey'));
     console.log('Is called: ', returnedObject.methodPromise.called());
     console.log('Is calledWith Monkey: ', returnedObject.methodPromise.calledWith('Monkey'));

@@ -1,4 +1,4 @@
-export class Differed<T> {
+export class Deferred<T> {
     public resolve: Function;
     public reject: Function;
 

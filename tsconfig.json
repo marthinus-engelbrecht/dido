@@ -5,6 +5,8 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
     "sourceMap": true,
     "declaration": true
   },
