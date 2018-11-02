@@ -8,7 +8,7 @@ export function customAssertions(chai:any) {
 }
 
 function addSignatureAssertion(Assertion: any) {
-    Assertion.addMethod('signature', function (methodMocks: ObjectSignature) {
+    Assertion.addMethod("signature", function (methodMocks: ObjectSignature) {
         const obj = this._obj;
 
         methodMocks.forEach(({isAsync}, methodName) => {
@@ -17,6 +17,16 @@ function addSignatureAssertion(Assertion: any) {
             this.assert(
                 obj.hasOwnProperty(methodName),
                 `expected ${JSON.stringify(obj)} to have method "${methodName}"`,
+            );
+
+            this.assert(
+                obj.hasOwnProperty("$callsToMethods"),
+                `expected ${JSON.stringify(obj)} to have property "$callsToMethods"`,
+            );
+
+            this.assert(
+                obj.$callsToMethods instanceof Array,
+                `expected ${JSON.stringify(obj)} to have property "$callsToMethods" of type Array`,
             );
 
             this.assert(

@@ -1,84 +1,94 @@
 import {Deferred} from "./Deferred";
-import {Map} from 'crowd';
-
 
 function createSpyMembers(): SpyMembers {
     return {
-        calledWith(...args: Array<any>): boolean {
-            if(!this.called()) {
-                return false
+        calledWith(...args: any[]): boolean {
+            if (!this.called()) {
+                return false;
             }
 
-            return JSON.stringify(this.calls[0].params) === JSON.stringify(args)
+            return JSON.stringify(this.calls[0].params) === JSON.stringify(args);
         },
 
         called(): boolean {
             return this.calls.length > 0;
         },
 
-        callCount : 0,
-        calls: []
-    }
+        callCount: 0,
+        calls: new Array<Call>(),
+    };
 }
 
 function createMethodMember(methodName: string): MethodSpy {
-    return Object.assign(function (returnValue: any, ...args: Array<any>) {
-        let isDeferred = returnValue instanceof Deferred;
+    return Object.assign(function(returnValue?: any, ...args: any[]): any {
+        const isDeferred = returnValue instanceof Deferred;
 
-        let call: Call = {
-            params: args
+        let result = returnValue;
+
+        const call: Call = {
+            params: new Array(...args),
         };
 
         if (isDeferred) {
             call.deferredResponse = returnValue;
-            returnValue = returnValue.promise
+            result = returnValue.promise;
         }
 
         this[methodName].calls.push(call);
         this[methodName].callCount = this[methodName].calls.length;
 
-        return returnValue
+        return result;
     }, createSpyMembers());
 }
 
-function addRequiredAsyncProperties(successValue: any, failureValue: any, methodMember: MethodSpy, mockObj: ObjectSpy) {
+function addRequiredAsyncProperties(successValue: any, failureValue: any,
+                                    methodMember: MethodSpy, mockObj: ObjectSpy): MethodSpy {
     const deferred = new Deferred(successValue, failureValue);
     const boundMember = methodMember.bind(mockObj, deferred);
-    methodMember = Object.assign(methodMember, {
-        $deferred: deferred
+    let result = methodMember;
+
+    result = Object.assign(result, {
+        $deferred: deferred,
     });
 
-    methodMember = Object.assign(boundMember, methodMember);
-    return methodMember;
+    result = Object.assign(boundMember, result);
+
+    return result;
 }
 
-function addRequiredProperties(methodMember: MethodSpy, mockObj: ObjectSpy, successValue: any) {
+function addRequiredProperties(methodMember: MethodSpy, mockObj: ObjectSpy, successValue: any): MethodSpy {
     const boundMember = methodMember.bind(mockObj, successValue);
-    methodMember = Object.assign(boundMember, methodMember);
-    return methodMember;
+    let result = methodMember;
+    result = Object.assign(boundMember, result);
+    return result;
 }
 
-export function createMethodMock(methodToMock: (...arg: Array<any>) => any, methods: ObjectSignature) {
+export function createMethodMock(methodToMock: (...arg: any[]) => any,
+                                 objectSignature: ObjectSignature): (...arg: any[]) => any {
     return new Proxy(methodToMock, {
-        apply: function () {
-            const mockObj: ObjectSpy = {};
+        apply(): ObjectSpy {
+            const mockObj: ObjectSpy = {
+                get $callsToMethods(): Calls {
+                    return methodsSpies.map((methodSpy: MethodSpy) => methodSpy.calls).flatten() as Calls;
+                },
+            };
 
-            methods.forEach(({isAsync, successValue, failureValue}, methodName) => {
-                let methodMember: MethodSpy = createMethodMember(methodName);
-
+            const methodsSpies = objectSignature.mapToArray(({isAsync, successValue, failureValue}, methodName) => {
+                let methodSpy: MethodSpy = createMethodMember(methodName);
 
                 if (isAsync) {
-                    methodMember = addRequiredAsyncProperties(successValue, failureValue, methodMember, mockObj);
+                    methodSpy = addRequiredAsyncProperties(successValue, failureValue, methodSpy, mockObj);
                 } else {
-                    methodMember = addRequiredProperties(methodMember, mockObj, successValue);
+                    methodSpy = addRequiredProperties(methodSpy, mockObj, successValue);
                 }
 
+                mockObj[methodName] = methodSpy;
 
-                mockObj[methodName] = methodMember
+                return methodSpy;
             });
 
-            return mockObj
-        }
+            return mockObj;
+        },
     });
 }
 
@@ -86,26 +96,28 @@ export class ObjectSignature extends Map<string, MethodSignature> {
 }
 
 export interface MethodSignature {
-    isAsync?: boolean,
-    successValue: any,
-    failureValue?: any
+    isAsync?: boolean;
+    successValue: any;
+    failureValue?: any;
 }
 
 export interface ObjectSpy {
-    [index: string]: MethodSpy | any
+    readonly $callsToMethods: Call[];
+
+    [index: string]: MethodSpy | any;
 }
 
 export interface MethodSpy extends SpyMembers {
-    (...args: any[]): any,
+    (returnValue?: any, ...args: any[]): any;
 }
 
-export interface Calls extends Array<Call> {
+export class Calls extends Array<Call> {
 
 }
 
 export interface Call {
-    params: Params,
-    deferredResponse?: Deferred<any>
+    params: Params;
+    deferredResponse?: Deferred<any>;
 }
 
 export interface Params extends Array<any> {
@@ -115,9 +127,9 @@ export interface Params extends Array<any> {
 export interface SpyMembers {
     $deferred?: Deferred<any>;
 
-    calledWith: (...args: Array<any>) => boolean
+    calledWith: (...args: any[]) => boolean;
 
-    called: () => boolean
-    callCount: number
-    calls: Calls
+    called: () => boolean;
+    callCount: number;
+    calls: Calls;
 }
