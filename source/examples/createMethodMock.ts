@@ -1,28 +1,28 @@
 import {createMethodMock, ObjectSignature} from "../main/Dido";
 
-function aFunctionThatReturnsAnObject() {
+function aFunctionThatReturnsAnObject(): any {
     return {
-        async methodAsync(){},
-        methodPromise(){
-            return new Promise((resolve, reject) => {})
+        async methodAsync(): Promise<void> {},
+        methodPromise(): Promise<void>{
+            return new Promise((resolve, reject) => {});
         },
-        methodSync() {
-            return 'Things'
-        }
-    }
+        methodSync(): string {
+            return "Things";
+        },
+    };
 }
 
-let returnObjectSignature = new ObjectSignature();
+const returnObjectSignature = new ObjectSignature();
 
-returnObjectSignature.set('methodPromise', {
-    isAsync: true, //default: false
-    successValue: 'things that need to be returned',
-    failureValue: 'otherThings'
+returnObjectSignature.set("methodPromise", {
+    failureValue: "otherThings",
+    isAsync: true, // default: false
+    successValue: "things that need to be returned",
 });
 
-returnObjectSignature.set('methodSync', {
-    successValue: 'things',
-    failureValue: 'otherThings'
+returnObjectSignature.set("methodSync", {
+    failureValue: "otherThings",
+    successValue: "things",
 });
 
 const mockedMethod = createMethodMock(aFunctionThatReturnsAnObject, returnObjectSignature);
@@ -30,13 +30,12 @@ const mockedMethod = createMethodMock(aFunctionThatReturnsAnObject, returnObject
 const returnedObject = mockedMethod();
 
 async function log(){
-    console.log('MockedMethods:', Object.keys(returnedObject).join(', '));
-    returnedObject.methodPromise.$defered.resolve();
-    console.log('Returned:', await returnedObject.methodPromise('Monkey'));
-    console.log('Is called: ', returnedObject.methodPromise.called());
-    console.log('Is calledWith Monkey: ', returnedObject.methodPromise.calledWith('Monkey'));
-    console.log('Is calledWith Donkey: ', returnedObject.methodPromise.calledWith('Donkey'));
+    console.log("MockedMethods:", Object.keys(returnedObject).join(", "));
+    returnedObject.methodPromise.$deferred.resolve();
+    console.log("Returned:", await returnedObject.methodPromise("Monkey"));
+    console.log("Is called: ", returnedObject.methodPromise.called());
+    console.log("Is calledWith Monkey: ", returnedObject.methodPromise.calledWith("Monkey"));
+    console.log("Is calledWith Donkey: ", returnedObject.methodPromise.calledWith("Donkey"));
 }
 
 log();
-
